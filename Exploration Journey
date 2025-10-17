@@ -1,0 +1,2784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="Journey of Courage - An interactive adventure about courage through 5 mystical zones">
+    <title>Journey of Courage</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            -webkit-overflow-scrolling: touch;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: none;
+        }
+        
+        html {
+            height: -webkit-fill-available;
+        }
+
+        #gameContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        #gameCanvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            image-rendering: -webkit-optimize-contrast;
+        }
+
+        #storyPanel {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px 30px;
+            max-width: 600px;
+            width: calc(100% - 400px);
+            color: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transition: all 0.5s ease;
+            opacity: 0;
+            pointer-events: none;
+            --arrow-color: #FFD700;
+        }
+        
+        #storyPanel.position-top {
+            top: 20px;
+        }
+        
+        #storyPanel.position-bottom {
+            bottom: 100px;
+        }
+        
+        #storyPanel::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+        }
+        
+        #storyPanel.position-top::before {
+            bottom: -15px;
+            border-top: 15px solid var(--arrow-color);
+        }
+        
+        #storyPanel.position-bottom::before {
+            top: -15px;
+            border-bottom: 15px solid var(--arrow-color);
+        }
+
+        #storyPanel.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #storyTitle {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        #storyText {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            right: 250px;
+            display: none;
+            gap: 10px;
+        }
+        
+        .mobile-btn-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            touch-action: none;
+            transition: all 0.1s ease;
+        }
+        
+        .mobile-btn:active {
+            background: rgba(255, 215, 0, 0.3);
+            transform: scale(0.95);
+        }
+        
+        .mobile-btn.pressed {
+            background: rgba(255, 215, 0, 0.5);
+            transform: scale(0.95);
+        }
+        
+        #swipeHint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 30px;
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+            font-size: 16px;
+            display: none;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        @media (max-width: 768px) {
+            #mobileControls {
+                display: flex;
+                flex-direction: column;
+                right: 20px;
+                bottom: 80px;
+            }
+            
+            #swipeHint {
+                display: block;
+                animation: fadeInOut 3s ease-in-out;
+            }
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        #musicIndicator {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .music-bar {
+            width: 3px;
+            height: 20px;
+            background: #FFD700;
+            border-radius: 2px;
+            animation: musicPulse 0.5s ease-in-out infinite alternate;
+        }
+        
+        .music-bar:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+        
+        .music-bar:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+        
+        .music-bar:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+        
+        @keyframes musicPulse {
+            from { height: 8px; opacity: 0.5; }
+            to { height: 20px; opacity: 1; }
+        }
+
+        #controls h3 {
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+
+        #controls p {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        #progress {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 180px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #progress h3 {
+            margin-bottom: 10px;
+            color: #FFD700;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .zone-badge {
+            display: block;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 8px;
+            font-size: 11px;
+            background: rgba(100, 100, 100, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+            text-align: center;
+        }
+
+        .zone-badge.visited {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .story-dots {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .story-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .story-dot.completed {
+            background: #FFD700;
+            box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+        }
+
+        #progress::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #progress::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        #progress::-webkit-scrollbar-thumb {
+            background: rgba(255, 215, 0, 0.5);
+            border-radius: 3px;
+        }
+
+        #progress::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 215, 0, 0.7);
+        }
+
+        @media (max-width: 768px) {
+            #progress {
+                top: 10px;
+                transform: none;
+                right: 10px;
+                max-width: 150px;
+                padding: 10px;
+            }
+
+            #controls {
+                display: none;
+            }
+            
+            #musicIndicator {
+                bottom: 10px;
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+
+            #storyPanel.position-bottom {
+                bottom: 200px;
+            }
+            
+            #storyPanel.position-top {
+                top: 10px;
+            }
+            
+            #storyPanel {
+                width: calc(100% - 40px);
+                padding: 15px 20px;
+            }
+
+            .zone-badge {
+                font-size: 10px;
+                padding: 6px;
+            }
+            
+            #mobileControls {
+                display: flex;
+                flex-direction: column;
+                right: 20px;
+                bottom: 20px;
+            }
+            
+            .mobile-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        #startScreen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #startScreen h1 {
+            font-size: 48px;
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        #startScreen p {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        #startButton {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            border: none;
+            border-radius: 30px;
+            color: #333;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #startButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .courage-meter {
+            margin-top: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .courage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FF6B6B);
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>🌟 Journey of Courage 🌟</h1>
+        <p>
+            In a world where courage shapes reality, a tiny hero must traverse five mystical zones,
+            each testing different aspects of bravery. Guide our mini adventurer through challenges,
+            discover inspiring stories, and unlock the true meaning of courage.
+        </p>
+        <button id="startButton">Begin Your Journey</button>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="controls">
+            <h3>Controls</h3>
+            <p>⬅️ ➡️ Arrow Keys: Move</p>
+            <p>⬆️ ⬇️ Arrow Keys: Jump Between Zones</p>
+            <p>📖 Walk to story orbs to read</p>
+        </div>
+        
+        <div id="mobileControls">
+            <div class="mobile-btn-group">
+                <div class="mobile-btn" id="btnUp">⬆️</div>
+            </div>
+            <div class="mobile-btn-group">
+                <div class="mobile-btn" id="btnLeft">⬅️</div>
+                <div class="mobile-btn" id="btnRight">➡️</div>
+            </div>
+            <div class="mobile-btn-group">
+                <div class="mobile-btn" id="btnDown">⬇️</div>
+            </div>
+        </div>
+        
+        <div id="swipeHint">
+            Swipe up/down to change zones 👆👇
+        </div>
+        
+        <div id="musicIndicator">
+            <span>🎵</span>
+            <div class="music-bar"></div>
+            <div class="music-bar"></div>
+            <div class="music-bar"></div>
+            <div class="music-bar"></div>
+            <span id="zoneMusicName">Ocean Ambient</span>
+        </div>
+
+        <div id="progress">
+            <h3>Progress</h3>
+            <div class="zone-badge" id="badge-0">
+                🌊 Uncertainty
+                <div class="story-dots">
+                    <div class="story-dot" data-zone="0" data-part="0"></div>
+                    <div class="story-dot" data-zone="0" data-part="1"></div>
+                    <div class="story-dot" data-zone="0" data-part="2"></div>
+                </div>
+            </div>
+            <div class="zone-badge" id="badge-1">
+                🌲 Fear
+                <div class="story-dots">
+                    <div class="story-dot" data-zone="1" data-part="0"></div>
+                    <div class="story-dot" data-zone="1" data-part="1"></div>
+                    <div class="story-dot" data-zone="1" data-part="2"></div>
+                </div>
+            </div>
+            <div class="zone-badge" id="badge-2">
+                ⛰️ Challenge
+                <div class="story-dots">
+                    <div class="story-dot" data-zone="2" data-part="0"></div>
+                    <div class="story-dot" data-zone="2" data-part="1"></div>
+                    <div class="story-dot" data-zone="2" data-part="2"></div>
+                </div>
+            </div>
+            <div class="zone-badge" id="badge-3">
+                🔥 Adversity
+                <div class="story-dots">
+                    <div class="story-dot" data-zone="3" data-part="0"></div>
+                    <div class="story-dot" data-zone="3" data-part="1"></div>
+                    <div class="story-dot" data-zone="3" data-part="2"></div>
+                </div>
+            </div>
+            <div class="zone-badge" id="badge-4">
+                ⭐ Triumph
+                <div class="story-dots">
+                    <div class="story-dot" data-zone="4" data-part="0"></div>
+                    <div class="story-dot" data-zone="4" data-part="1"></div>
+                    <div class="story-dot" data-zone="4" data-part="2"></div>
+                </div>
+            </div>
+            <div class="courage-meter">
+                <div class="courage-fill" id="courageFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div id="storyPanel">
+            <div id="storyTitle"></div>
+            <div id="storyText"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const storyPanel = document.getElementById('storyPanel');
+        const storyTitle = document.getElementById('storyTitle');
+        const storyText = document.getElementById('storyText');
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
+        const courageFill = document.getElementById('courageFill');
+
+        let gameStarted = false;
+        
+        // Set canvas size to fill viewport
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Regenerate positions if zones exist
+            if (gameStarted && zonePositions.length > 0) {
+                generateZonePositions();
+            }
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Prevent scrolling and zooming
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.tagName !== 'CANVAS' && !e.target.classList.contains('mobile-btn')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        });
+
+        // Game state
+        const player = {
+            x: 100,
+            y: 0,
+            width: 30,
+            height: 40,
+            speed: 5,
+            currentZone: 0,
+            visitedZones: new Set(),
+            storyProgress: [0, 0, 0, 0, 0], // Track which story part (0-2) for each zone
+            completedStories: new Set(), // Track completed story parts as "zone-part"
+            allStoriesComplete: false,
+            isMoving: false,
+            lastX: 100,
+            stepCount: 0
+        };
+        
+        // Particle system
+        const particles = [];
+        
+        // Weather effects
+        const raindrops = [];
+        const sunbeams = [];
+        const windParticles = [];
+        
+        // Story triggers (collectible objects in each zone)
+        const storyTriggers = [];
+        
+        // Random positions for each zone (generated once and stored)
+        const zonePositions = [];
+        
+        // Portal for restarting after completion
+        let portal = null;
+        const fireworks = [];
+        
+        // Plane for flying back to start
+        let plane = null;
+        
+        // Audio context for sound effects
+        let audioContext;
+        let musicGain;
+        let sfxGain;
+        let currentMusicOscillators = [];
+        let soundWaves = [];
+        
+        // Initialize audio
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Master gain nodes
+            musicGain = audioContext.createGain();
+            musicGain.gain.value = 0.15;
+            musicGain.connect(audioContext.destination);
+            
+            sfxGain = audioContext.createGain();
+            sfxGain.gain.value = 0.3;
+            sfxGain.connect(audioContext.destination);
+        }
+        
+        // Play footstep sound
+        function playFootstep() {
+            if (!audioContext) return;
+            
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.value = 100 + Math.random() * 50;
+            
+            gain.gain.value = 0.1;
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(sfxGain);
+            
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.1);
+            
+            // Create visual sound wave
+            soundWaves.push({
+                x: player.x + player.width / 2,
+                y: player.y + player.height,
+                radius: 0,
+                maxRadius: 30,
+                life: 1
+            });
+        }
+        
+        // Play story read sound
+        function playStorySound(stage) {
+            if (!audioContext) return;
+            
+            const frequencies = [523.25, 659.25, 783.99]; // C, E, G
+            const baseFreq = frequencies[stage] || 523.25;
+            
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.value = baseFreq;
+            
+            gain.gain.value = 0.2;
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            osc.connect(gain);
+            gain.connect(sfxGain);
+            
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.5);
+        }
+        
+        // Play completion sound
+        function playCompletionSound() {
+            if (!audioContext) return;
+            
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C
+            
+            notes.forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                
+                const startTime = audioContext.currentTime + i * 0.15;
+                gain.gain.setValueAtTime(0.15, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(sfxGain);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.3);
+            });
+        }
+        
+        // Play zone transition sound
+        function playZoneTransition() {
+            if (!audioContext) return;
+            
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3);
+            
+            gain.gain.value = 0.15;
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            osc.connect(gain);
+            gain.connect(sfxGain);
+            
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.3);
+        }
+        
+        // Play ambient zone music
+        function playZoneMusic(zoneIndex) {
+            if (!audioContext) return;
+            
+            // Stop current music
+            currentMusicOscillators.forEach(osc => {
+                try { osc.stop(); } catch(e) {}
+            });
+            currentMusicOscillators = [];
+            
+            // Zone-specific chord progressions and names
+            const zoneChords = [
+                [261.63, 329.63, 392.00], // Ocean: C, E, G (calm)
+                [293.66, 369.99, 440.00], // Forest: D, F#, A (mysterious)
+                [329.63, 415.30, 493.88], // Mountain: E, G#, B (ascending)
+                [349.23, 440.00, 523.25], // Volcano: F, A, C (intense)
+                [392.00, 493.88, 587.33]  // Summit: G, B, D (triumphant)
+            ];
+            
+            const zoneNames = [
+                "Ocean Ambient",
+                "Forest Mystery",
+                "Mountain Climb",
+                "Volcano Intensity",
+                "Summit Triumph"
+            ];
+            
+            const chord = zoneChords[zoneIndex] || zoneChords[0];
+            
+            // Update music indicator name
+            const musicNameEl = document.getElementById('zoneMusicName');
+            if (musicNameEl) {
+                musicNameEl.textContent = zoneNames[zoneIndex] || zoneNames[0];
+            }
+            
+            // Create ambient pad sound
+            chord.forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                
+                gain.gain.value = 0;
+                gain.gain.linearRampToValueAtTime(0.03 + i * 0.01, audioContext.currentTime + 1);
+                
+                osc.connect(gain);
+                gain.connect(musicGain);
+                
+                osc.start();
+                currentMusicOscillators.push(osc);
+            });
+        }
+        
+        // Update and draw sound waves
+        function updateSoundWaves() {
+            for (let i = soundWaves.length - 1; i >= 0; i--) {
+                const wave = soundWaves[i];
+                wave.radius += 2;
+                wave.life -= 0.05;
+                
+                if (wave.life <= 0 || wave.radius > wave.maxRadius) {
+                    soundWaves.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawSoundWaves() {
+            soundWaves.forEach(wave => {
+                ctx.globalAlpha = wave.life;
+                ctx.strokeStyle = '#64C8FF';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            });
+        }
+        
+        // Weather effects for different story stages
+        function triggerWeatherEffect(stage) {
+            if (stage === 0) {
+                // Stage 1: Sunshine
+                createSunshine();
+            } else if (stage === 1) {
+                // Stage 2: Gentle rain
+                createRain();
+            } else if (stage === 2) {
+                // Stage 3: Wind particles
+                createWind();
+            }
+        }
+        
+        function createSunshine() {
+            for (let i = 0; i < 50; i++) {
+                sunbeams.push({
+                    x: Math.random() * canvas.width,
+                    y: -20,
+                    speed: 1 + Math.random() * 2,
+                    length: 40 + Math.random() * 60,
+                    opacity: 0.3 + Math.random() * 0.4,
+                    life: 3
+                });
+            }
+        }
+        
+        function createRain() {
+            for (let i = 0; i < 100; i++) {
+                raindrops.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * -canvas.height,
+                    speed: 8 + Math.random() * 4,
+                    length: 15 + Math.random() * 10,
+                    life: 1
+                });
+            }
+        }
+        
+        function createWind() {
+            for (let i = 0; i < 80; i++) {
+                windParticles.push({
+                    x: -50,
+                    y: Math.random() * canvas.height,
+                    speed: 3 + Math.random() * 5,
+                    size: 2 + Math.random() * 3,
+                    life: 1,
+                    wave: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        
+        // Update weather effects
+        function updateWeatherEffects() {
+            // Update raindrops
+            for (let i = raindrops.length - 1; i >= 0; i--) {
+                const drop = raindrops[i];
+                drop.y += drop.speed;
+                drop.life -= 0.01;
+                
+                if (drop.y > canvas.height || drop.life <= 0) {
+                    raindrops.splice(i, 1);
+                }
+            }
+            
+            // Update sunbeams
+            for (let i = sunbeams.length - 1; i >= 0; i--) {
+                const beam = sunbeams[i];
+                beam.y += beam.speed;
+                beam.life -= 0.01;
+                
+                if (beam.y > canvas.height || beam.life <= 0) {
+                    sunbeams.splice(i, 1);
+                }
+            }
+            
+            // Update wind particles
+            for (let i = windParticles.length - 1; i >= 0; i--) {
+                const wind = windParticles[i];
+                wind.x += wind.speed;
+                wind.y += Math.sin(wind.wave) * 2;
+                wind.wave += 0.1;
+                wind.life -= 0.005;
+                
+                if (wind.x > canvas.width || wind.life <= 0) {
+                    windParticles.splice(i, 1);
+                }
+            }
+        }
+        
+        // Draw weather effects
+        function drawWeatherEffects() {
+            // Draw raindrops (blue)
+            raindrops.forEach(drop => {
+                ctx.globalAlpha = drop.life * 0.6;
+                ctx.strokeStyle = '#64C8FF';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x, drop.y + drop.length);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            });
+            
+            // Draw sunbeams (golden)
+            sunbeams.forEach(beam => {
+                ctx.globalAlpha = beam.opacity * (beam.life / 3);
+                const gradient = ctx.createLinearGradient(beam.x, beam.y, beam.x, beam.y + beam.length);
+                gradient.addColorStop(0, 'rgba(255, 215, 0, 0)');
+                gradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.6)');
+                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(beam.x, beam.y);
+                ctx.lineTo(beam.x, beam.y + beam.length);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            });
+            
+            // Draw wind particles (white/purple)
+            windParticles.forEach(wind => {
+                ctx.globalAlpha = wind.life * 0.7;
+                ctx.fillStyle = '#FF64FF';
+                ctx.beginPath();
+                ctx.ellipse(wind.x, wind.y, wind.size * 2, wind.size, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        const zones = [
+            {
+                name: "Ocean of Uncertainty",
+                emoji: "🌊",
+                color: "#4a90a4",
+                gradient: ["#2E3192", "#1BFFFF"],
+                lesson: "Courage to Begin",
+                stories: [
+                    {
+                        title: "The Shore of Hesitation",
+                        text: "You stand at the water's edge, toes sinking into wet sand. The ocean stretches endlessly before you, its depths unknown and mysterious. A small wooden boat waits, weathered but sturdy. The old lighthouse keeper whispers, 'Every adventurer who crossed these waters felt this same trembling in their heart. The sea doesn't ask for certainty—it asks only for the courage to set sail.'"
+                    },
+                    {
+                        title: "The First Wave",
+                        text: "Your boat rocks as you push off from shore. The first wave crashes over the bow, cold and shocking. You grip the oars tighter, realizing that doubt is just water—it can drench you, but it cannot sink you unless you let go. The compass in your pocket spins wildly, reminding you that sometimes the path forward is found by feeling, not by knowing."
+                    },
+                    {
+                        title: "Learning to Navigate",
+                        text: "Miles from shore now, you notice something magical: the stars above reflect in the water below, creating a path of light. You've learned to read the waves, to feel the wind's direction. The uncertainty hasn't vanished—it's transformed. You realize that courage isn't about eliminating doubt; it's about becoming comfortable dancing with the unknown."
+                    }
+                ]
+            },
+            {
+                name: "Forest of Fear",
+                emoji: "🌲",
+                color: "#2d5016",
+                gradient: ["#134E5E", "#71B280"],
+                lesson: "Courage to Face",
+                stories: [
+                    {
+                        title: "The Dark Entrance",
+                        text: "Ancient trees tower above, their branches weaving a canopy so thick that sunlight barely penetrates. Strange sounds echo from the depths—rustling, whispers, the crack of twigs. Your heart pounds as shadows seem to move with purpose. A carved stone at the forest's edge reads: 'What you fear to face will follow you. What you turn to face often bows before you.'"
+                    },
+                    {
+                        title: "Meeting the Shadows",
+                        text: "Deep in the forest, you encounter them—towering shadow creatures that embody your deepest fears. But as you stand your ground, trembling but resolute, something extraordinary happens. The shadows begin to shrink, and you see them for what they truly are: illusions cast by your own mind, magnified by darkness. A wise owl perched nearby hoots softly, 'Fear is a teacher dressed as a monster.'"
+                    },
+                    {
+                        title: "The Clearing of Clarity",
+                        text: "You emerge into a sunlit clearing where flowers bloom in impossible colors. Behind you, the forest no longer seems menacing—just misunderstood. You've learned that fear isn't your enemy but a guardian, warning you of where growth awaits. The fears you faced didn't disappear; they transformed into wisdom. In your pocket, you find a seed from the forest—a reminder that courage plants itself in the soil of fear."
+                    }
+                ]
+            },
+            {
+                name: "Mountain of Challenge",
+                emoji: "⛰️",
+                color: "#7b7b7b",
+                gradient: ["#4B79A1", "#283E51"],
+                lesson: "Courage to Persist",
+                stories: [
+                    {
+                        title: "The Impossible Ascent",
+                        text: "The mountain pierces the clouds, its peak invisible from below. Your legs already ache just looking at it. Other climbers pass you, some descending with stories of failure, others ascending with determined faces. An elderly climber sits on a boulder, catching her breath. 'I've failed to reach the summit seventeen times,' she smiles. 'Each attempt taught me a new path. I'm here for my eighteenth lesson.'"
+                    },
+                    {
+                        title: "The Storm and the Ledge",
+                        text: "Halfway up, a storm strikes. Rain pelts your face, wind threatens to tear you from the cliff. You huddle on a narrow ledge, muscles screaming, spirit wavering. Then you notice: carved into the rock face are thousands of handprints from past climbers who rested here. Some messages read, 'This too shall pass,' others simply say, 'You're stronger than you know.' You add your own handprint and realize—persistence isn't about never stopping; it's about choosing to continue after every rest."
+                    },
+                    {
+                        title: "The View from Higher Ground",
+                        text: "Breaking through the clouds, you see the world transformed. What seemed like impossible obstacles from below now appear as part of a greater landscape of beauty. You're not at the summit yet—but you're higher than you've ever been. A mountain goat leaps past effortlessly, and you laugh at the absurdity: the mountain isn't your enemy. It's your gym, your teacher, your mirror. Every step upward has built something unshakeable within you."
+                    }
+                ]
+            },
+            {
+                name: "Volcano of Adversity",
+                emoji: "🔥",
+                color: "#d84315",
+                gradient: ["#FF6B6B", "#FFE66D"],
+                lesson: "Courage to Endure",
+                stories: [
+                    {
+                        title: "The Trembling Earth",
+                        text: "The ground shakes beneath your feet. Cracks spider across the landscape, glowing with inner fire. This isn't a challenge you chose—it's chaos erupting around you. Ash falls like snow, and the air burns with heat. A phoenix circles overhead, its wings leaving trails of ember. It cries out, and somehow you understand: 'Some fires you cannot prevent. But you can choose whether they consume you or forge you.'"
+                    },
+                    {
+                        title: "Walking Through Flames",
+                        text: "The volcano erupts in spectacular fury, yet you cannot turn back—the path forward is through the heart of the inferno. You discover something profound: you can't control the lava's flow, but you can control your steps. Between rivers of molten rock, there are paths. In the chaos, there are moments of clarity. You're learning the fierce grace of endurance—not fighting the storm, but finding your center within it."
+                    },
+                    {
+                        title: "Forged in Fire",
+                        text: "Emerging from the volcanic zone, your clothes are singed, your face smudged with ash, but something within you gleams like tempered steel. The adversity you couldn't control has revealed what you could control: your spirit, your resolve, your refusal to break. You notice a piece of obsidian in your hand—formed only under extreme pressure and heat. Some things can only be created through adversity. You are now one of them."
+                    }
+                ]
+            },
+            {
+                name: "Summit of Triumph",
+                emoji: "⭐",
+                color: "#ffd700",
+                gradient: ["#F2994A", "#F2C94C"],
+                lesson: "Courage to Continue",
+                stories: [
+                    {
+                        title: "The Golden Peak",
+                        text: "You stand at the highest point, where earth meets sky. From here, you can see all the zones you've traversed—the ocean that taught you to begin, the forest where you faced your fears, the mountain where you learned to persist, the volcano where you endured. Stars swirl overhead in patterns that seem to tell your story. A voice like wind chimes speaks: 'You have gathered the five fragments of courage. But do you know the greatest secret?'"
+                    },
+                    {
+                        title: "The Mirror of Truth",
+                        text: "A crystal mirror appears, floating in starlight. You look into it expecting to see a hero transformed, a warrior victorious. Instead, you see yourself—simply yourself, but different. Your eyes hold depths they didn't have before. Your stance speaks of someone who has walked through uncertainty, fear, challenge, and adversity. The voice returns: 'The triumph isn't that you changed into someone else. It's that you discovered who you always were beneath the doubts.'"
+                    },
+                    {
+                        title: "The Eternal Journey",
+                        text: "As you absorb this truth, the summit transforms. You realize it's not an ending but a new beginning. Beyond this peak lie other mountains, other oceans, other trials. But now you carry something unshakeable: the knowledge that courage is not a destination but a companion for life's journey. The stars descend and dance around you, each one whispering a future challenge, a future triumph. You smile. The adventure doesn't end—it expands. And you are ready."
+                    }
+                ]
+            }
+        ];
+
+        const keys = {};
+
+        // Event listeners
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (player.currentZone > 0) {
+                    player.currentZone--;
+                    playZoneTransition();
+                    playZoneMusic(player.currentZone);
+                    initializeStoryTriggers();
+                }
+            }
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (player.currentZone < zones.length - 1) {
+                    player.currentZone++;
+                    player.visitedZones.add(player.currentZone);
+                    updateProgress();
+                    playZoneTransition();
+                    playZoneMusic(player.currentZone);
+                    initializeStoryTriggers();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        // Mobile touch controls
+        function setupMobileControls() {
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+            const btnUp = document.getElementById('btnUp');
+            const btnDown = document.getElementById('btnDown');
+            
+            // Left button
+            btnLeft.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys['ArrowLeft'] = true;
+                btnLeft.classList.add('pressed');
+            });
+            btnLeft.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys['ArrowLeft'] = false;
+                btnLeft.classList.remove('pressed');
+            });
+            
+            // Right button
+            btnRight.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys['ArrowRight'] = true;
+                btnRight.classList.add('pressed');
+            });
+            btnRight.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys['ArrowRight'] = false;
+                btnRight.classList.remove('pressed');
+            });
+            
+            // Up button
+            btnUp.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (player.currentZone > 0 && gameStarted) {
+                    player.currentZone--;
+                    playZoneTransition();
+                    playZoneMusic(player.currentZone);
+                    initializeStoryTriggers();
+                }
+                btnUp.classList.add('pressed');
+                setTimeout(() => btnUp.classList.remove('pressed'), 200);
+            });
+            
+            // Down button
+            btnDown.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (player.currentZone < zones.length - 1 && gameStarted) {
+                    player.currentZone++;
+                    player.visitedZones.add(player.currentZone);
+                    updateProgress();
+                    playZoneTransition();
+                    playZoneMusic(player.currentZone);
+                    initializeStoryTriggers();
+                }
+                btnDown.classList.add('pressed');
+                setTimeout(() => btnDown.classList.remove('pressed'), 200);
+            });
+            
+            // Also support mouse for testing
+            btnLeft.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                keys['ArrowLeft'] = true;
+                btnLeft.classList.add('pressed');
+            });
+            btnLeft.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                keys['ArrowLeft'] = false;
+                btnLeft.classList.remove('pressed');
+            });
+            
+            btnRight.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                keys['ArrowRight'] = true;
+                btnRight.classList.add('pressed');
+            });
+            btnRight.addEventListener('mouseup', (e) => {
+                e.preventDefault();
+                keys['ArrowRight'] = false;
+                btnRight.classList.remove('pressed');
+            });
+            
+            // Prevent scrolling on mobile
+            document.getElementById('mobileControls').addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+        }
+        
+        // Initialize mobile controls
+        setupMobileControls();
+        
+        // Swipe detection for zone switching
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+        
+        canvas.addEventListener('touchend', (e) => {
+            if (!gameStarted) return;
+            
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, { passive: true });
+        
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const minSwipeDistance = 50;
+            
+            // Vertical swipe is more significant
+            if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > minSwipeDistance) {
+                if (deltaY < 0) {
+                    // Swipe up - move down through zones
+                    if (player.currentZone < zones.length - 1) {
+                        player.currentZone++;
+                        player.visitedZones.add(player.currentZone);
+                        updateProgress();
+                        playZoneTransition();
+                        playZoneMusic(player.currentZone);
+                        initializeStoryTriggers();
+                    }
+                } else {
+                    // Swipe down - move up through zones
+                    if (player.currentZone > 0) {
+                        player.currentZone--;
+                        playZoneTransition();
+                        playZoneMusic(player.currentZone);
+                        initializeStoryTriggers();
+                    }
+                }
+            }
+        }
+
+        // Generate random positions for all zones
+        function generateZonePositions() {
+            for (let zone = 0; zone < zones.length; zone++) {
+                const positions = [];
+                const minX = 200;
+                const maxX = canvas.width - 200;
+                const minSpacing = 200;
+                
+                // Generate 3 random positions with minimum spacing
+                for (let i = 0; i < 3; i++) {
+                    let attempts = 0;
+                    let newX;
+                    let validPosition = false;
+                    
+                    while (!validPosition && attempts < 50) {
+                        newX = minX + Math.random() * (maxX - minX);
+                        validPosition = true;
+                        
+                        // Check if position is far enough from existing positions
+                        for (let j = 0; j < positions.length; j++) {
+                            if (Math.abs(newX - positions[j]) < minSpacing) {
+                                validPosition = false;
+                                break;
+                            }
+                        }
+                        attempts++;
+                    }
+                    
+                    if (validPosition) {
+                        positions.push(newX);
+                    } else {
+                        // Fallback to evenly spaced if can't find valid random position
+                        positions.push(minX + (i * (maxX - minX) / 3));
+                    }
+                }
+                
+                // Sort positions left to right for sequential progression
+                positions.sort((a, b) => a - b);
+                zonePositions[zone] = positions;
+            }
+        }
+        
+        startButton.addEventListener('click', () => {
+            gameStarted = true;
+            startScreen.classList.add('hidden');
+            player.visitedZones.add(0);
+            updateProgress();
+            
+            // Initialize audio on user interaction
+            initAudio();
+            playZoneMusic(0);
+            
+            // Generate random positions for all zones
+            generateZonePositions();
+            
+            // Initialize story triggers for first zone
+            initializeStoryTriggers();
+            
+            // Show swipe hint on mobile
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    const swipeHint = document.getElementById('swipeHint');
+                    swipeHint.style.display = 'block';
+                    setTimeout(() => {
+                        swipeHint.style.display = 'none';
+                    }, 3000);
+                }, 1000);
+            }
+            
+            gameLoop();
+        });
+
+        // Initialize story triggers for current zone
+        function initializeStoryTriggers() {
+            storyTriggers.length = 0; // Clear existing triggers
+            
+            // Get zone-specific random positions
+            const triggerPositions = zonePositions[player.currentZone] || [300, 600, 900];
+            const triggerEmojis = ['📖', '✨', '⭐'];
+            const triggerColors = ['#FFD700', '#64C8FF', '#FF64FF'];
+            
+            // Find the next uncompleted story part for this zone
+            let nextStoryPart = -1;
+            for (let i = 0; i < 3; i++) {
+                if (!player.completedStories.has(`${player.currentZone}-${i}`)) {
+                    nextStoryPart = i;
+                    break;
+                }
+            }
+            
+            // Only show the next story trigger (sequential order)
+            if (nextStoryPart !== -1) {
+                storyTriggers.push({
+                    x: triggerPositions[nextStoryPart],
+                    y: 0, // Will be calculated in draw
+                    width: 40,
+                    height: 40,
+                    storyPart: nextStoryPart,
+                    emoji: triggerEmojis[nextStoryPart],
+                    color: triggerColors[nextStoryPart],
+                    collected: false,
+                    pulse: 0
+                });
+            }
+            
+            // Update story panel position for current zone
+            updateStoryPanelPosition();
+        }
+        
+        // Update story panel position based on current zone
+        function updateStoryPanelPosition() {
+            storyPanel.classList.remove('position-top', 'position-bottom');
+            if (player.currentZone <= 2) {
+                storyPanel.classList.add('position-bottom');
+            } else {
+                storyPanel.classList.add('position-top');
+            }
+        }
+        
+        // Check collision between player and triggers
+        function checkTriggerCollision() {
+            for (let i = storyTriggers.length - 1; i >= 0; i--) {
+                const trigger = storyTriggers[i];
+                
+                if (player.x < trigger.x + trigger.width &&
+                    player.x + player.width > trigger.x &&
+                    player.y < trigger.y + trigger.height &&
+                    player.y + player.height > trigger.y) {
+                    
+                    // Collision detected!
+                    trigger.collected = true;
+                    showStory(trigger.storyPart);
+                    triggerWeatherEffect(trigger.storyPart);
+                    storyTriggers.splice(i, 1);
+                    
+                    // Immediately spawn next trigger after collection
+                    initializeStoryTriggers();
+                    return;
+                }
+            }
+        }
+        
+        function showStory(forcedPart = null) {
+            const zone = zones[player.currentZone];
+            const storyPart = forcedPart !== null ? forcedPart : player.storyProgress[player.currentZone];
+            const currentStory = zone.stories[storyPart];
+            
+            // Update panel position
+            updateStoryPanelPosition();
+            
+            // Stage-specific styling
+            let stageBorderColor = '#FFD700'; // Stage 1 - Gold
+            let stageGlow = '0 0 20px rgba(255, 215, 0, 0.5)';
+            let stageEmoji = '📖';
+            
+            if (storyPart === 1) {
+                stageBorderColor = '#64C8FF'; // Stage 2 - Blue
+                stageGlow = '0 0 25px rgba(100, 200, 255, 0.6)';
+                stageEmoji = '✨';
+            } else if (storyPart === 2) {
+                stageBorderColor = '#FF64FF'; // Stage 3 - Purple
+                stageGlow = '0 0 30px rgba(255, 100, 255, 0.7)';
+                stageEmoji = '⭐';
+            }
+            
+            storyPanel.style.borderColor = stageBorderColor;
+            storyPanel.style.boxShadow = stageGlow + ', 0 10px 40px rgba(0, 0, 0, 0.5)';
+            
+            // Update arrow color to match stage
+            const arrowBorderColor = stageBorderColor;
+            if (player.currentZone <= 2) {
+                storyPanel.style.setProperty('--arrow-color', arrowBorderColor);
+            } else {
+                storyPanel.style.setProperty('--arrow-color', arrowBorderColor);
+            }
+            
+            storyTitle.textContent = `${zone.emoji} ${currentStory.title} ${stageEmoji}`;
+            storyTitle.style.color = stageBorderColor;
+            
+            const nextPart = (storyPart + 1) % 3;
+            const progressText = nextPart === 0 ? 
+                "Part 3 of 3 • Press SPACE to restart from Part 1" : 
+                `Part ${storyPart + 1} of 3 • Press SPACE for next part`;
+            
+            storyText.innerHTML = `<p style="margin-bottom: 10px;">${currentStory.text}</p>
+                <p style="font-size: 12px; color: ${stageBorderColor}; text-align: right;">${progressText}</p>`;
+            storyPanel.classList.add('active');
+            
+            // Play story sound
+            playStorySound(storyPart);
+            
+            // Mark this story part as completed
+            const wasNewStory = !player.completedStories.has(`${player.currentZone}-${storyPart}`);
+            player.completedStories.add(`${player.currentZone}-${storyPart}`);
+            
+            // Create celebration particles for new story completion with stage-specific colors
+            if (wasNewStory) {
+                createParticles(player.x + player.width / 2, player.y + player.height / 2, 20, storyPart);
+            }
+            
+            // Update visual dots
+            updateStoryDots();
+            
+            // Advance to next story part (cycle through 0, 1, 2) only if not forced
+            if (forcedPart === null) {
+                player.storyProgress[player.currentZone] = nextPart;
+            }
+            
+            // Update overall progress
+            updateProgress();
+            
+            // Check for completion
+            if (player.completedStories.size === 15 && !player.allStoriesComplete) {
+                player.allStoriesComplete = true;
+                playCompletionSound();
+                showCompletionCelebration();
+                createPortal();
+            }
+            
+            setTimeout(() => {
+                storyPanel.classList.remove('active');
+            }, 12000);
+        }
+        
+        function createParticles(x, y, count, stage = 0) {
+            for (let i = 0; i < count; i++) {
+                let color;
+                
+                // Different color schemes for each stage
+                if (stage === 0) {
+                    // Stage 1 - Gold/Yellow hues
+                    color = `hsl(${40 + Math.random() * 20}, 100%, ${60 + Math.random() * 20}%)`;
+                } else if (stage === 1) {
+                    // Stage 2 - Blue/Cyan hues
+                    color = `hsl(${180 + Math.random() * 40}, 100%, ${60 + Math.random() * 20}%)`;
+                } else if (stage === 2) {
+                    // Stage 3 - Purple/Magenta hues
+                    color = `hsl(${280 + Math.random() * 40}, 100%, ${60 + Math.random() * 20}%)`;
+                } else {
+                    // Default - Random rainbow
+                    color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                }
+                
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 1,
+                    color: color
+                });
+            }
+        }
+        
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2; // gravity
+                p.life -= 0.02;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+        }
+        
+        function showCompletionCelebration() {
+            // Create massive particle burst with rainbow colors
+            for (let i = 0; i < 100; i++) {
+                createParticles(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height,
+                    5,
+                    -1 // Use rainbow colors
+                );
+            }
+            
+            // Show completion message
+            storyTitle.textContent = "🎉 Journey Complete! 🎉";
+            storyText.innerHTML = `<p style="margin-bottom: 10px; font-size: 18px; font-weight: bold; color: #FFD700;">
+                Congratulations, brave adventurer!</p>
+                <p style="margin-bottom: 10px;">You have completed all 15 story parts across the five zones of courage. 
+                You've learned to begin despite uncertainty, face your fears, persist through challenges, 
+                endure adversity, and understand that the journey of courage never truly ends.</p>
+                <p style="color: #FFD700;">A magical portal has appeared at the bottom! Walk into it to begin a new journey!</p>`;
+            storyPanel.classList.add('active');
+            
+            setTimeout(() => {
+                storyPanel.classList.remove('active');
+            }, 20000);
+        }
+        
+        // Create portal at the bottom
+        function createPortal() {
+            const zoneHeight = canvas.height / zones.length;
+            portal = {
+                x: canvas.width / 2 - 50,
+                y: (zones.length - 1) * zoneHeight + zoneHeight / 2 - 50,
+                width: 100,
+                height: 100,
+                rotation: 0,
+                active: true
+            };
+        }
+        
+        // Check portal collision
+        function checkPortalCollision() {
+            if (!portal || !portal.active) return false;
+            
+            if (player.x < portal.x + portal.width &&
+                player.x + player.width > portal.x &&
+                player.y < portal.y + portal.height &&
+                player.y + player.height > portal.y) {
+                
+                portal.active = false;
+                triggerMassiveFireworks();
+                return true;
+            }
+            return false;
+        }
+        
+        // Create massive firework display
+        function triggerMassiveFireworks() {
+            // Launch 50 fireworks with delays
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    launchFirework(
+                        Math.random() * canvas.width,
+                        canvas.height
+                    );
+                }, i * 100);
+            }
+            
+            // Play victory fanfare
+            playVictoryFanfare();
+            
+            // Spawn plane after fireworks
+            setTimeout(() => {
+                spawnPlane();
+            }, 6000);
+        }
+        
+        // Launch single firework
+        function launchFirework(startX, startY) {
+            const targetX = startX + (Math.random() - 0.5) * 200;
+            const targetY = Math.random() * canvas.height * 0.4;
+            const colors = ['#FF6B6B', '#4ECDC4', '#FFD93D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            fireworks.push({
+                x: startX,
+                y: startY,
+                targetX: targetX,
+                targetY: targetY,
+                vx: (targetX - startX) / 60,
+                vy: (targetY - startY) / 60,
+                color: color,
+                exploded: false,
+                trail: [],
+                particles: []
+            });
+        }
+        
+        // Update fireworks
+        function updateFireworks() {
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const fw = fireworks[i];
+                
+                if (!fw.exploded) {
+                    // Move firework
+                    fw.x += fw.vx;
+                    fw.y += fw.vy;
+                    
+                    // Add trail
+                    fw.trail.push({ x: fw.x, y: fw.y, life: 1 });
+                    
+                    // Update trail
+                    for (let j = fw.trail.length - 1; j >= 0; j--) {
+                        fw.trail[j].life -= 0.05;
+                        if (fw.trail[j].life <= 0) {
+                            fw.trail.splice(j, 1);
+                        }
+                    }
+                    
+                    // Check if reached target
+                    if (Math.abs(fw.x - fw.targetX) < 20 && Math.abs(fw.y - fw.targetY) < 20) {
+                        fw.exploded = true;
+                        
+                        // Create explosion particles
+                        for (let j = 0; j < 100; j++) {
+                            const angle = (Math.PI * 2 * j) / 100;
+                            const speed = 2 + Math.random() * 4;
+                            fw.particles.push({
+                                x: fw.x,
+                                y: fw.y,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                life: 1,
+                                size: 2 + Math.random() * 3
+                            });
+                        }
+                    }
+                } else {
+                    // Update explosion particles
+                    let allDead = true;
+                    for (let j = fw.particles.length - 1; j >= 0; j--) {
+                        const p = fw.particles[j];
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.1; // gravity
+                        p.life -= 0.015;
+                        
+                        if (p.life > 0) {
+                            allDead = false;
+                        }
+                    }
+                    
+                    if (allDead) {
+                        fireworks.splice(i, 1);
+                    }
+                }
+            }
+        }
+        
+        // Draw fireworks
+        function drawFireworks() {
+            fireworks.forEach(fw => {
+                if (!fw.exploded) {
+                    // Draw trail
+                    fw.trail.forEach(t => {
+                        ctx.globalAlpha = t.life;
+                        ctx.fillStyle = fw.color;
+                        ctx.beginPath();
+                        ctx.arc(t.x, t.y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    
+                    // Draw firework
+                    ctx.globalAlpha = 1;
+                    ctx.fillStyle = fw.color;
+                    ctx.beginPath();
+                    ctx.arc(fw.x, fw.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Draw explosion
+                    fw.particles.forEach(p => {
+                        if (p.life > 0) {
+                            ctx.globalAlpha = p.life;
+                            ctx.fillStyle = fw.color;
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    });
+                }
+            });
+            ctx.globalAlpha = 1;
+        }
+        
+        // Play victory fanfare
+        function playVictoryFanfare() {
+            if (!audioContext) return;
+            
+            const melody = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C, E, G, C, E
+            
+            melody.forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                
+                const startTime = audioContext.currentTime + i * 0.2;
+                gain.gain.setValueAtTime(0.2, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+                
+                osc.connect(gain);
+                gain.connect(sfxGain);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.5);
+            });
+        }
+        
+        // Spawn plane
+        function spawnPlane() {
+            const zoneHeight = canvas.height / zones.length;
+            
+            plane = {
+                x: canvas.width + 100,
+                y: player.y,
+                width: 80,
+                height: 40,
+                speed: 5,
+                state: 'approaching', // approaching, boarding, flying_back, dropping_off, leaving
+                passengerOffset: { x: 0, y: 0 },
+                targetX: player.x - 100,
+                startZone: player.currentZone
+            };
+            
+            playPlaneSound();
+        }
+        
+        // Update plane
+        function updatePlane() {
+            if (!plane) return;
+            
+            const zoneHeight = canvas.height / zones.length;
+            
+            switch(plane.state) {
+                case 'approaching':
+                    plane.x -= plane.speed;
+                    if (plane.x <= plane.targetX) {
+                        plane.state = 'boarding';
+                        setTimeout(() => {
+                            plane.state = 'flying_back';
+                            plane.targetX = 150;
+                        }, 1000);
+                    }
+                    break;
+                    
+                case 'boarding':
+                    // Player moves toward plane
+                    if (player.x < plane.x + plane.width / 2 - 10) {
+                        player.x += 3;
+                    }
+                    break;
+                    
+                case 'flying_back':
+                    // Move plane left
+                    if (plane.x > plane.targetX) {
+                        plane.x -= plane.speed;
+                    }
+                    
+                    // Move plane up through zones
+                    const targetY = zoneHeight / 2 - player.height / 2;
+                    if (plane.y > targetY) {
+                        plane.y -= 3;
+                    }
+                    
+                    // Keep player with plane
+                    player.x = plane.x + plane.width / 2 - player.width / 2;
+                    player.y = plane.y;
+                    
+                    // Update player zone as we fly
+                    const newZone = Math.floor(plane.y / zoneHeight);
+                    if (newZone >= 0 && newZone < zones.length) {
+                        player.currentZone = newZone;
+                    }
+                    
+                    // Check if reached start position
+                    if (plane.x <= plane.targetX + 10 && plane.y <= targetY + 20) {
+                        player.currentZone = 0;
+                        player.x = 100;
+                        player.y = zoneHeight / 2 - player.height / 2;
+                        plane.state = 'dropping_off';
+                        setTimeout(() => {
+                            plane.state = 'leaving';
+                        }, 500);
+                    }
+                    break;
+                    
+                case 'dropping_off':
+                    // Keep player at start position
+                    player.x = 100;
+                    player.y = zoneHeight / 2 - player.height / 2;
+                    player.currentZone = 0;
+                    break;
+                    
+                case 'leaving':
+                    plane.x -= plane.speed;
+                    player.x = 100;
+                    player.y = zoneHeight / 2 - player.height / 2;
+                    player.currentZone = 0;
+                    
+                    if (plane.x < -plane.width - 100) {
+                        plane = null;
+                        restartGame();
+                    }
+                    break;
+            }
+        }
+        
+        // Draw plane
+        function drawPlane() {
+            if (!plane) return;
+            
+            ctx.save();
+            
+            // Plane body
+            ctx.fillStyle = '#E0E0E0';
+            ctx.beginPath();
+            ctx.ellipse(plane.x + plane.width / 2, plane.y + plane.height / 2, plane.width / 2, plane.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Nose
+            ctx.fillStyle = '#FF6B6B';
+            ctx.beginPath();
+            ctx.moveTo(plane.x, plane.y + plane.height / 2);
+            ctx.lineTo(plane.x - 20, plane.y + plane.height / 2 - 10);
+            ctx.lineTo(plane.x - 20, plane.y + plane.height / 2 + 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Wings
+            ctx.fillStyle = '#4ECDC4';
+            ctx.fillRect(plane.x + 10, plane.y - 10, 40, 10);
+            ctx.fillRect(plane.x + 10, plane.y + plane.height, 40, 10);
+            
+            // Windows
+            ctx.fillStyle = '#64C8FF';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(plane.x + 20 + i * 20, plane.y + plane.height / 2, 6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Propeller (spinning)
+            const propellerSpeed = Date.now() / 50;
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(plane.x - 25, plane.y + plane.height / 2);
+            ctx.lineTo(plane.x - 35, plane.y + plane.height / 2 + Math.sin(propellerSpeed) * 15);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(plane.x - 25, plane.y + plane.height / 2);
+            ctx.lineTo(plane.x - 35, plane.y + plane.height / 2 + Math.cos(propellerSpeed) * 15);
+            ctx.stroke();
+            
+            // Trail clouds
+            if (plane.state === 'flying_back' || plane.state === 'leaving') {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.arc(
+                        plane.x + plane.width + 20 + i * 30,
+                        plane.y + plane.height / 2 + Math.sin(Date.now() / 200 + i) * 5,
+                        8 - i * 2,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+            }
+            
+            ctx.restore();
+        }
+        
+        // Play plane sound
+        function playPlaneSound() {
+            if (!audioContext) return;
+            
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.value = 100;
+            
+            gain.gain.value = 0.1;
+            
+            osc.connect(gain);
+            gain.connect(sfxGain);
+            
+            osc.start();
+            
+            // Stop after 8 seconds
+            setTimeout(() => {
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+                setTimeout(() => osc.stop(), 1000);
+            }, 7000);
+        }
+        
+        // Restart game
+        function restartGame() {
+            // Reset player
+            player.x = 100;
+            player.currentZone = 0;
+            player.visitedZones.clear();
+            player.visitedZones.add(0);
+            player.completedStories.clear();
+            player.allStoriesComplete = false;
+            player.storyProgress = [0, 0, 0, 0, 0];
+            
+            // Clear effects
+            particles.length = 0;
+            fireworks.length = 0;
+            raindrops.length = 0;
+            sunbeams.length = 0;
+            windParticles.length = 0;
+            portal = null;
+            plane = null;
+            
+            // Generate new random positions
+            generateZonePositions();
+            
+            // Reset triggers
+            initializeStoryTriggers();
+            
+            // Reset progress
+            updateProgress();
+            updateStoryDots();
+            
+            // Reset music
+            playZoneMusic(0);
+        }
+        
+        function updateStoryDots() {
+            // Update all story dots based on completed stories
+            document.querySelectorAll('.story-dot').forEach(dot => {
+                const zone = dot.getAttribute('data-zone');
+                const part = dot.getAttribute('data-part');
+                const key = `${zone}-${part}`;
+                
+                if (player.completedStories.has(key)) {
+                    dot.classList.add('completed');
+                } else {
+                    dot.classList.remove('completed');
+                }
+            });
+        }
+
+        function updateProgress() {
+            player.visitedZones.forEach(zoneIndex => {
+                const badge = document.getElementById(`badge-${zoneIndex}`);
+                if (badge) badge.classList.add('visited');
+            });
+            
+            // Calculate progress based on completed story parts (5 zones × 3 stories = 15 total)
+            const totalStories = zones.length * 3;
+            const progress = (player.completedStories.size / totalStories) * 100;
+            courageFill.style.width = progress + '%';
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameStarted) return;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw zones
+            const zoneHeight = canvas.height / zones.length;
+            
+            zones.forEach((zone, index) => {
+                const y = index * zoneHeight;
+                
+                // Gradient background with story stage variation
+                const gradient = ctx.createLinearGradient(0, y, canvas.width, y + zoneHeight);
+                
+                // Get current story stage for this zone (0, 1, or 2)
+                const completedStages = [0, 1, 2].filter(i => 
+                    player.completedStories.has(`${index}-${i}`)
+                ).length;
+                
+                // Adjust gradient colors based on story progression
+                let color1 = zone.gradient[0];
+                let color2 = zone.gradient[1];
+                
+                if (index === player.currentZone) {
+                    // Add stage-specific overlay tint
+                    if (completedStages === 1) {
+                        // Stage 2 - Add lighter, more vibrant tint
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                    } else if (completedStages === 2) {
+                        // Stage 3 - Add golden tint
+                        ctx.fillStyle = 'rgba(255, 215, 0, 0.08)';
+                    }
+                }
+                
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, y, canvas.width, zoneHeight);
+                
+                // Draw stage overlay if in current zone
+                if (index === player.currentZone && completedStages > 0) {
+                    if (completedStages === 1) {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                        ctx.fillRect(0, y, canvas.width, zoneHeight);
+                    } else if (completedStages === 2) {
+                        ctx.fillStyle = 'rgba(255, 215, 0, 0.08)';
+                        ctx.fillRect(0, y, canvas.width, zoneHeight);
+                    }
+                }
+                
+                // Zone decorations
+                drawZoneDecorations(zone, y, zoneHeight, index);
+                
+                // Zone label
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.font = 'bold 24px Segoe UI';
+                ctx.fillText(`${zone.emoji} ${zone.name}`, 20, y + 40);
+                
+                ctx.font = '16px Segoe UI';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.fillText(zone.lesson, 20, y + 65);
+                
+                // Stage indicator for current zone
+                if (index === player.currentZone) {
+                    const stagesComplete = [0, 1, 2].filter(i => 
+                        player.completedStories.has(`${index}-${i}`)
+                    ).length;
+                    
+                    let stageName = "Beginning";
+                    let stageColor = '#FFD700';
+                    
+                    if (stagesComplete === 1) {
+                        stageName = "Deepening";
+                        stageColor = '#64C8FF';
+                    } else if (stagesComplete === 2) {
+                        stageName = "Mastery";
+                        stageColor = '#FF64FF';
+                    } else if (stagesComplete === 3) {
+                        stageName = "Complete";
+                        stageColor = '#00FF00';
+                    }
+                    
+                    // Draw stage badge in top right of zone
+                    const badgeX = canvas.width - 150;
+                    const badgeY = y + 30;
+                    
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fillRect(badgeX - 10, badgeY - 20, 140, 35);
+                    
+                    ctx.strokeStyle = stageColor;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(badgeX - 10, badgeY - 20, 140, 35);
+                    
+                    ctx.fillStyle = stageColor;
+                    ctx.font = 'bold 14px Segoe UI';
+                    ctx.fillText(`Stage: ${stageName}`, badgeX, badgeY);
+                }
+                
+                // Story progress dots in the zone
+                const dotsX = 20;
+                const dotsY = y + 85;
+                for (let i = 0; i < 3; i++) {
+                    const completed = player.completedStories.has(`${index}-${i}`);
+                    ctx.fillStyle = completed ? '#FFD700' : 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(dotsX + i * 15, dotsY, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    if (completed) {
+                        ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(dotsX + i * 15, dotsY, 6, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Highlight current zone with stage-specific colors
+                if (index === player.currentZone) {
+                    const completedInZone = [0, 1, 2].filter(i => 
+                        player.completedStories.has(`${index}-${i}`)
+                    ).length;
+                    
+                    // Different border colors for different stages
+                    let borderColor = 'rgba(255, 215, 0, 0.6)'; // Stage 1 - Gold
+                    let pulseSpeed = 1;
+                    
+                    if (completedInZone === 1) {
+                        borderColor = 'rgba(100, 200, 255, 0.7)'; // Stage 2 - Bright Blue
+                        pulseSpeed = 1.5;
+                    } else if (completedInZone === 2) {
+                        borderColor = 'rgba(255, 100, 255, 0.8)'; // Stage 3 - Purple/Magenta
+                        pulseSpeed = 2;
+                    }
+                    
+                    // Pulsing effect
+                    const pulse = 0.3 + Math.abs(Math.sin(Date.now() / (1000 / pulseSpeed))) * 0.5;
+                    ctx.strokeStyle = borderColor.replace(/[\d.]+\)$/, pulse + ')');
+                    ctx.lineWidth = 4 + Math.sin(Date.now() / 500) * 2;
+                    ctx.setLineDash([10, 5]);
+                    ctx.strokeRect(5, y + 5, canvas.width - 10, zoneHeight - 10);
+                    ctx.setLineDash([]);
+                    
+                    // Add stage indicator particles
+                    if (completedInZone > 0) {
+                        const time = Date.now() / 1000;
+                        for (let p = 0; p < completedInZone * 3; p++) {
+                            const px = (p * 100 + time * 50) % canvas.width;
+                            const py = y + 10 + Math.sin(time * 2 + p) * 5;
+                            
+                            ctx.fillStyle = completedInZone === 1 ? 
+                                'rgba(100, 200, 255, 0.4)' : 
+                                'rgba(255, 100, 255, 0.5)';
+                            ctx.beginPath();
+                            ctx.arc(px, py, 3, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                }
+                
+                // Zone boundary
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, y + zoneHeight);
+                ctx.lineTo(canvas.width, y + zoneHeight);
+                ctx.stroke();
+            });
+
+            // Update player position and play footsteps (only if plane is not active)
+            if (!plane || plane.state === 'leaving') {
+                const previousX = player.x;
+                
+                if (keys['ArrowLeft'] && player.x > 0) {
+                    player.x -= player.speed;
+                    player.isMoving = true;
+                } else if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+                    player.x += player.speed;
+                    player.isMoving = true;
+                } else {
+                    player.isMoving = false;
+                }
+                
+                // Play footstep sound when moving
+                if (player.isMoving && previousX !== player.x) {
+                    player.stepCount++;
+                    if (player.stepCount % 10 === 0) { // Play every 10 frames
+                        playFootstep();
+                    }
+                }
+            }
+
+            // Calculate player Y position based on current zone (only if plane not controlling)
+            if (!plane || plane.state === 'leaving') {
+                player.y = player.currentZone * zoneHeight + zoneHeight / 2 - player.height / 2;
+            }
+            
+            // Update trigger positions based on zone
+            storyTriggers.forEach(trigger => {
+                trigger.y = player.currentZone * zoneHeight + zoneHeight / 2 - trigger.height / 2;
+                trigger.pulse = Math.sin(Date.now() / 300) * 5;
+            });
+            
+            // Check collisions only if plane is not active
+            if (!plane) {
+                // Check collision with story triggers
+                checkTriggerCollision();
+                
+                // Check portal collision
+                checkPortalCollision();
+            }
+            
+            // Draw portal if exists
+            if (portal && portal.active) {
+                portal.rotation += 0.05;
+                
+                ctx.save();
+                ctx.translate(portal.x + portal.width / 2, portal.y + portal.height / 2);
+                ctx.rotate(portal.rotation);
+                
+                // Outer glow
+                const portalGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, portal.width);
+                portalGradient.addColorStop(0, 'rgba(138, 43, 226, 0.8)');
+                portalGradient.addColorStop(0.5, 'rgba(75, 0, 130, 0.5)');
+                portalGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+                
+                ctx.fillStyle = portalGradient;
+                ctx.fillRect(-portal.width, -portal.height, portal.width * 2, portal.height * 2);
+                
+                // Inner swirl
+                for (let i = 0; i < 5; i++) {
+                    const swirl = (Date.now() / 1000 + i * Math.PI / 5) % (Math.PI * 2);
+                    const radius = 20 + i * 8;
+                    ctx.strokeStyle = `rgba(255, 215, 0, ${0.8 - i * 0.15})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, swirl, swirl + Math.PI);
+                    ctx.stroke();
+                }
+                
+                // Center star
+                ctx.fillStyle = '#FFD700';
+                ctx.font = 'bold 40px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🌟', 0, 0);
+                
+                ctx.restore();
+                
+                // Floating text
+                ctx.fillStyle = '#FFD700';
+                ctx.font = 'bold 16px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText('Enter to Begin Again', portal.x + portal.width / 2, portal.y - 20);
+            }
+            
+            // Draw story triggers
+            storyTriggers.forEach(trigger => {
+                // Glowing orb effect
+                ctx.save();
+                
+                // Outer glow
+                const glowGradient = ctx.createRadialGradient(
+                    trigger.x + trigger.width / 2, 
+                    trigger.y + trigger.height / 2, 
+                    0,
+                    trigger.x + trigger.width / 2, 
+                    trigger.y + trigger.height / 2, 
+                    trigger.width / 2 + 10 + trigger.pulse
+                );
+                glowGradient.addColorStop(0, trigger.color);
+                glowGradient.addColorStop(0.5, trigger.color.replace(')', ', 0.5)').replace('rgb', 'rgba'));
+                glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(
+                    trigger.x + trigger.width / 2, 
+                    trigger.y + trigger.height / 2, 
+                    trigger.width / 2 + 10 + trigger.pulse, 
+                    0, 
+                    Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Inner orb
+                ctx.fillStyle = trigger.color;
+                ctx.beginPath();
+                ctx.arc(
+                    trigger.x + trigger.width / 2, 
+                    trigger.y + trigger.height / 2, 
+                    trigger.width / 2, 
+                    0, 
+                    Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Emoji
+                ctx.font = '24px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#000';
+                ctx.fillText(
+                    trigger.emoji,
+                    trigger.x + trigger.width / 2,
+                    trigger.y + trigger.height / 2
+                );
+                
+                ctx.restore();
+            });
+
+            // Update and draw particles
+            updateParticles();
+            drawParticles();
+            
+            // Update and draw sound waves
+            updateSoundWaves();
+            drawSoundWaves();
+            
+            // Update and draw weather effects
+            updateWeatherEffects();
+            drawWeatherEffects();
+            
+            // Update and draw fireworks
+            updateFireworks();
+            drawFireworks();
+            
+            // Update and draw plane
+            updatePlane();
+            drawPlane();
+
+            // Draw player (only if not on plane)
+            if (!plane || plane.state === 'leaving') {
+                drawPlayer();
+            } else if (plane && (plane.state === 'boarding' || plane.state === 'flying_back')) {
+                // Draw player on plane
+                drawPlayer();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawZoneDecorations(zone, y, height, index) {
+            const centerY = y + height / 2;
+            
+            // Different decorations for each zone
+            switch(index) {
+                case 0: // Ocean - waves
+                    drawWaves(y, height);
+                    drawOceanNPCs(y, height);
+                    break;
+                case 1: // Forest - trees
+                    drawTrees(y, height);
+                    drawForestNPCs(y, height);
+                    break;
+                case 2: // Mountain - peaks
+                    drawMountains(y, height);
+                    drawMountainNPCs(y, height);
+                    break;
+                case 3: // Volcano - lava
+                    drawLava(y, height);
+                    drawVolcanoNPCs(y, height);
+                    break;
+                case 4: // Summit - stars
+                    drawStars(y, height);
+                    drawSummitNPCs(y, height);
+                    break;
+            }
+        }
+        
+        function drawOceanNPCs(y, height) {
+            // Lighthouse keeper
+            if (player.completedStories.has('0-0')) {
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(canvas.width - 150, y + height - 60, 20, 40);
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(canvas.width - 140, y + height - 65, 12, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Boat
+            if (player.completedStories.has('0-1')) {
+                const boatX = 400 + Math.sin(Date.now() / 1000) * 10;
+                ctx.fillStyle = '#8B4513';
+                ctx.beginPath();
+                ctx.moveTo(boatX, y + height / 2);
+                ctx.lineTo(boatX + 40, y + height / 2);
+                ctx.lineTo(boatX + 35, y + height / 2 + 15);
+                ctx.lineTo(boatX + 5, y + height / 2 + 15);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            // Compass
+            if (player.completedStories.has('0-2')) {
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(canvas.width - 350, y + 50, 15, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.fillStyle = '#FFD700';
+                ctx.fillText('N', canvas.width - 355, y + 45);
+            }
+        }
+        
+        function drawForestNPCs(y, height) {
+            // Shadow creatures
+            if (player.completedStories.has('1-1')) {
+                const time = Date.now() / 1000;
+                const alpha = 0.3 + Math.sin(time) * 0.2;
+                ctx.fillStyle = `rgba(50, 50, 100, ${alpha})`;
+                ctx.fillRect(500, y + height - 80, 30, 60);
+                ctx.beginPath();
+                ctx.arc(515, y + height - 90, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Wise owl
+            if (player.completedStories.has('1-2')) {
+                ctx.fillStyle = '#8B4513';
+                ctx.beginPath();
+                ctx.arc(canvas.width - 200, y + 80, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(canvas.width - 208, y + 75, 6, 6);
+                ctx.fillRect(canvas.width - 198, y + 75, 6, 6);
+            }
+            
+            // Magical flower
+            if (player.completedStories.has('1-2')) {
+                const flowerTime = Date.now() / 500;
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2 + flowerTime;
+                    const px = canvas.width - 400 + Math.cos(angle) * 12;
+                    const py = y + height - 40 + Math.sin(angle) * 12;
+                    ctx.fillStyle = `hsl(${i * 60}, 100%, 70%)`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        function drawMountainNPCs(y, height) {
+            // Elderly climber
+            if (player.completedStories.has('2-0')) {
+                ctx.fillStyle = '#666';
+                ctx.fillRect(300, y + height - 50, 15, 30);
+                ctx.fillStyle = '#CCC';
+                ctx.beginPath();
+                ctx.arc(307, y + height - 55, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Handprints on cliff
+            if (player.completedStories.has('2-1')) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                for (let i = 0; i < 5; i++) {
+                    const hx = 600 + i * 40;
+                    const hy = y + height / 2 - 50 + Math.sin(i) * 20;
+                    ctx.fillRect(hx, hy, 8, 12);
+                    for (let f = 0; f < 4; f++) {
+                        ctx.fillRect(hx + f * 2, hy - 5, 1.5, 6);
+                    }
+                }
+            }
+            
+            // Mountain goat
+            if (player.completedStories.has('2-2')) {
+                const goatX = 800 + Math.sin(Date.now() / 800) * 50;
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(goatX, y + 100, 20, 15);
+                ctx.beginPath();
+                ctx.arc(goatX + 15, y + 95, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawVolcanoNPCs(y, height) {
+            // Phoenix
+            if (player.completedStories.has('3-0')) {
+                const phoenixTime = Date.now() / 500;
+                const px = canvas.width - 300 + Math.sin(phoenixTime) * 100;
+                const py = y + 80 + Math.cos(phoenixTime * 2) * 30;
+                
+                // Wings
+                ctx.fillStyle = '#FF6B6B';
+                ctx.beginPath();
+                ctx.ellipse(px - 15, py, 20, 10, -0.5, 0, Math.PI * 2);
+                ctx.ellipse(px + 15, py, 20, 10, 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Body
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(px, py, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Ember trail
+                ctx.fillStyle = 'rgba(255, 100, 0, 0.5)';
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.arc(px - i * 15, py + i * 5, 3 - i * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Obsidian
+            if (player.completedStories.has('3-2')) {
+                ctx.fillStyle = '#1a1a1a';
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width - 150, y + height - 60);
+                ctx.lineTo(canvas.width - 160, y + height - 40);
+                ctx.lineTo(canvas.width - 140, y + height - 45);
+                ctx.lineTo(canvas.width - 130, y + height - 55);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+        
+        function drawSummitNPCs(y, height) {
+            // Crystal mirror
+            if (player.completedStories.has('4-1')) {
+                const mirrorTime = Date.now() / 1000;
+                ctx.save();
+                ctx.translate(canvas.width / 2, y + height / 2);
+                ctx.rotate(Math.sin(mirrorTime) * 0.1);
+                
+                // Mirror frame
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 50, 70, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Reflective surface
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 50);
+                gradient.addColorStop(0, 'rgba(200, 220, 255, 0.5)');
+                gradient.addColorStop(1, 'rgba(100, 150, 255, 0.2)');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            
+            // Dancing stars
+            if (player.completedStories.has('4-2')) {
+                const starTime = Date.now() / 500;
+                for (let i = 0; i < 10; i++) {
+                    const angle = (i / 10) * Math.PI * 2 + starTime;
+                    const radius = 150 + Math.sin(starTime + i) * 30;
+                    const sx = canvas.width / 2 + Math.cos(angle) * radius;
+                    const sy = y + height / 2 + Math.sin(angle) * radius;
+                    const size = 4 + Math.sin(starTime * 2 + i) * 2;
+                    
+                    ctx.fillStyle = '#FFD700';
+                    ctx.beginPath();
+                    for (let p = 0; p < 5; p++) {
+                        const pointAngle = (p / 5) * Math.PI * 2 + starTime;
+                        const pointRadius = p % 2 === 0 ? size : size / 2;
+                        const pointX = sx + Math.cos(pointAngle) * pointRadius;
+                        const pointY = sy + Math.sin(pointAngle) * pointRadius;
+                        if (p === 0) ctx.moveTo(pointX, pointY);
+                        else ctx.lineTo(pointX, pointY);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawWaves(y, height) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 3;
+            const time = Date.now() / 1000;
+            
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                for (let x = 0; x < canvas.width; x += 20) {
+                    const waveY = y + height / 2 + Math.sin(x / 50 + time + i) * 20;
+                    if (x === 0) ctx.moveTo(x, waveY);
+                    else ctx.lineTo(x, waveY);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawTrees(y, height) {
+            ctx.fillStyle = 'rgba(0, 100, 0, 0.3)';
+            for (let i = 0; i < 15; i++) {
+                const x = (i * canvas.width / 15) + Math.sin(i * 2) * 30;
+                const treeY = y + height - 60;
+                
+                // Tree trunk
+                ctx.fillRect(x - 5, treeY, 10, 30);
+                
+                // Tree top
+                ctx.beginPath();
+                ctx.moveTo(x, treeY - 20);
+                ctx.lineTo(x - 15, treeY);
+                ctx.lineTo(x + 15, treeY);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function drawMountains(y, height) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 2;
+            
+            for (let i = 0; i < 5; i++) {
+                const baseX = i * (canvas.width / 4);
+                const peakX = baseX + canvas.width / 8;
+                const peakY = y + height / 4;
+                const baseY = y + height;
+                
+                ctx.beginPath();
+                ctx.moveTo(baseX, baseY);
+                ctx.lineTo(peakX, peakY);
+                ctx.lineTo(baseX + canvas.width / 4, baseY);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        function drawLava(y, height) {
+            const time = Date.now() / 500;
+            ctx.fillStyle = 'rgba(255, 100, 0, 0.3)';
+            
+            for (let i = 0; i < 20; i++) {
+                const x = (i * canvas.width / 20);
+                const lavaHeight = Math.abs(Math.sin(time + i)) * 40;
+                ctx.fillRect(x, y + height - lavaHeight, canvas.width / 20, lavaHeight);
+            }
+        }
+
+        function drawStars(y, height) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            const time = Date.now() / 1000;
+            
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 53 % canvas.width);
+                const starY = y + (i * 37 % height);
+                const size = 2 + Math.abs(Math.sin(time + i)) * 3;
+                
+                ctx.beginPath();
+                ctx.arc(x, starY, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawPlayer() {
+            // Flashlight/spotlight effect around the player
+            const spotlightGradient = ctx.createRadialGradient(
+                player.x + player.width / 2, 
+                player.y + player.height / 2,
+                0,
+                player.x + player.width / 2, 
+                player.y + player.height / 2,
+                80
+            );
+            spotlightGradient.addColorStop(0, 'rgba(255, 255, 200, 0.15)');
+            spotlightGradient.addColorStop(0.5, 'rgba(255, 255, 200, 0.05)');
+            spotlightGradient.addColorStop(1, 'rgba(255, 255, 200, 0)');
+            
+            ctx.fillStyle = spotlightGradient;
+            ctx.beginPath();
+            ctx.arc(player.x + player.width / 2, player.y + player.height / 2, 80, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Natural shadow (ellipse with perspective)
+            ctx.save();
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.ellipse(
+                player.x + player.width / 2, 
+                player.y + player.height + 3,
+                player.width * 0.6, 
+                player.height * 0.15,
+                0, 
+                0, 
+                Math.PI * 2
+            );
+            ctx.fill();
+            ctx.restore();
+
+            // Body
+            ctx.fillStyle = '#FF6B6B';
+            ctx.fillRect(player.x + 8, player.y + 15, 14, 20);
+            
+            // Head
+            ctx.fillStyle = '#FFD93D';
+            ctx.beginPath();
+            ctx.arc(player.x + 15, player.y + 10, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eyes
+            ctx.fillStyle = '#000';
+            ctx.fillRect(player.x + 12, player.y + 8, 2, 2);
+            ctx.fillRect(player.x + 16, player.y + 8, 2, 2);
+            
+            // Mouth (smile if stories completed in zone)
+            const storiesInZone = [0, 1, 2].filter(i => 
+                player.completedStories.has(`${player.currentZone}-${i}`)
+            ).length;
+            if (storiesInZone > 0) {
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(player.x + 15, player.y + 11, 3, 0, Math.PI);
+                ctx.stroke();
+            }
+            
+            // Legs
+            ctx.fillStyle = '#4A90E2';
+            ctx.fillRect(player.x + 10, player.y + 35, 5, 5);
+            ctx.fillRect(player.x + 15, player.y + 35, 5, 5);
+            
+            // Arms (moving)
+            const armSwing = Math.sin(Date.now() / 200) * 3;
+            ctx.fillStyle = '#FFD93D';
+            ctx.fillRect(player.x + 5, player.y + 18 + armSwing, 3, 10);
+            ctx.fillRect(player.x + 22, player.y + 18 - armSwing, 3, 10);
+            
+            // Courage aura when in visited zones
+            if (player.visitedZones.has(player.currentZone)) {
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(player.x + 15, player.y + 20, 25, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Floating story progress indicator
+            const float = Math.sin(Date.now() / 300) * 3;
+            const storiesCompleted = [0, 1, 2].filter(i => 
+                player.completedStories.has(`${player.currentZone}-${i}`)
+            ).length;
+            
+            if (storiesCompleted < 3) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(player.x - 5, player.y - 25 + float, 40, 16);
+                ctx.fillStyle = '#FFD700';
+                ctx.font = '12px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${storiesCompleted}/3 📖`, player.x + 15, player.y - 13 + float);
+                ctx.textAlign = 'left';
+            } else {
+                // Show completion badge
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(player.x + 15, player.y - 20 + float, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 12px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText('✓', player.x + 15, player.y - 16 + float);
+                ctx.textAlign = 'left';
+            }
+        }
+    </script>
+</body>
+</html>
+
