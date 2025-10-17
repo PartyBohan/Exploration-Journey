@@ -998,8 +998,27 @@
             
             // Only show the next story trigger (sequential order)
             if (nextStoryPart !== -1 && triggerPositions[nextStoryPart]) {
+                let orbX = triggerPositions[nextStoryPart];
+                
+                // If this is the first orb in a zone, position it near the player
+                if (nextStoryPart === 0) {
+                    const minDistance = 100;
+                    const maxDistance = 300;
+                    const direction = Math.random() < 0.5 ? -1 : 1; // Random left or right
+                    const distance = minDistance + Math.random() * (maxDistance - minDistance);
+                    
+                    orbX = player.x + (direction * distance);
+                    
+                    // Keep within bounds
+                    orbX = Math.max(150, Math.min(canvas.width - 150, orbX));
+                    
+                    // Update the stored position for consistency
+                    triggerPositions[nextStoryPart] = orbX;
+                    zonePositions[player.currentZone][nextStoryPart] = orbX;
+                }
+                
                 storyTriggers.push({
-                    x: triggerPositions[nextStoryPart],
+                    x: orbX,
                     y: 0, // Will be calculated in draw
                     width: 40,
                     height: 40,
