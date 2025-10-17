@@ -278,61 +278,7 @@
 
 
         #startScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            transition: opacity 0.5s ease;
-        }
-
-        #startScreen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        #startScreen h1 {
-            font-size: 48px;
-            color: white;
-            margin-bottom: 20px;
-            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        #startScreen p {
-            font-size: 20px;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 30px;
-            text-align: center;
-            max-width: 600px;
-            line-height: 1.6;
-        }
-
-        #startButton {
-            padding: 15px 40px;
-            font-size: 20px;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            border: none;
-            border-radius: 30px;
-            color: #333;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        #startButton:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            display: none;
         }
 
         .courage-meter {
@@ -441,8 +387,6 @@
         const storyPanel = document.getElementById('storyPanel');
         const storyTitle = document.getElementById('storyTitle');
         const storyText = document.getElementById('storyText');
-        const startScreen = document.getElementById('startScreen');
-        const startButton = document.getElementById('startButton');
         const courageFill = document.getElementById('courageFill');
 
         let gameStarted = false;
@@ -940,8 +884,10 @@
                 e.preventDefault();
                 if (player.currentZone > 0) {
                     player.currentZone--;
-                    playZoneTransition();
-                    playZoneMusic(player.currentZone);
+                    if (audioStarted) {
+                        playZoneTransition();
+                        playZoneMusic(player.currentZone);
+                    }
                     initializeStoryTriggers();
                 }
             }
@@ -952,8 +898,10 @@
                     player.currentZone++;
                     player.visitedZones.add(player.currentZone);
                     updateProgress();
-                    playZoneTransition();
-                    playZoneMusic(player.currentZone);
+                    if (audioStarted) {
+                        playZoneTransition();
+                        playZoneMusic(player.currentZone);
+                    }
                     initializeStoryTriggers();
                 }
             }
@@ -1005,25 +953,30 @@
             }
         }
         
-        // Start button click handler
-        startButton.addEventListener('click', () => {
-            gameStarted = true;
-            startScreen.classList.add('hidden');
-            player.visitedZones.add(0);
-            updateProgress();
-            
-            // Initialize audio on user interaction
-            initAudio();
-            playZoneMusic(0);
-            
-            // Generate random positions for all zones
-            generateZonePositions();
-            
-            // Initialize story triggers for first zone
-            initializeStoryTriggers();
-            
-            gameLoop();
-        });
+        // Auto-start game immediately
+        gameStarted = true;
+        player.visitedZones.add(0);
+        updateProgress();
+        
+        // Generate random positions for all zones
+        generateZonePositions();
+        
+        // Initialize story triggers for first zone
+        initializeStoryTriggers();
+        
+        // Start game loop
+        gameLoop();
+        
+        // Initialize audio only when player first moves (left or right)
+        let audioStarted = false;
+        
+        function startAudioOnFirstMove() {
+            if (!audioStarted) {
+                initAudio();
+                playZoneMusic(player.currentZone);
+                audioStarted = true;
+            }
+        }
 
         // Initialize story triggers for current zone
         function initializeStoryTriggers() {
@@ -1876,9 +1829,11 @@
                 const previousX = player.x;
                 
                 if (keys['ArrowLeft'] && player.x > 0) {
+                    startAudioOnFirstMove(); // Start audio on first movement
                     player.x -= player.speed;
                     player.isMoving = true;
                 } else if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+                    startAudioOnFirstMove(); // Start audio on first movement
                     player.x += player.speed;
                     player.isMoving = true;
                 } else {
